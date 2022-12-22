@@ -6,13 +6,13 @@
     Author:      Mark Messink
     Contact:     
     Created:     2020-11-24
-    Updated:     2023-02-02
+    Updated:     2022-12-20
 
     Version history:
     1.0.2 - (2021-12-21) Windows 10 build 21H2, Windows 11 build 21H2
 	1.0.3 - Changed logging
 	1.0.4 - Add creating list of installed FOD to Installed_FOD_List.txt 
-	1.0.5 - (2022-11-21) Windows 10 build 21H2, Windows 11 build 22H2
+	1.0.5 - (2022-12-20) Windows 10 build 21H2, Windows 11 build 22H2
 
 .DESCRIPTION
 	<wat doet het script in meerdere regels>
@@ -59,7 +59,7 @@ $logpath = "C:\IntuneLogs"
 $NameLogfile = "PSlog_RemoveFeaturesOnDemand.txt"
 $LowestWindowsBuild = 0
 $HighestWindowsBuild = 50000
-$InstalledFODList = Installed_FOD_List.txt
+$InstalledFODList = "Installed_FOD_List.txt"
 
 
 #################### Einde Variabelen ###############################
@@ -78,7 +78,7 @@ If(!(test-path $logpath))
 }
 
 # Add date + time to Logfile
-$TimeStamp = "{0:yyyyMMdd-HHmm}" -f (get-date)
+$TimeStamp = "{0:yyyyMMdd}" -f (get-date)
 $logFile = "$logpath\" + "$TimeStamp" + "_" + "$NameLogfile"
 
 # Start Transcript logging
@@ -97,13 +97,13 @@ If ($WindowsBuild -ge $LowestWindowsBuild -And $WindowsBuild -le $HighestWindows
 #################### Start base script ################################
 
 #################### Start uitvoeren script code ####################
-Write-Output "-------------------------------------------------------------------------------------"
-Write-Output "### Start uitvoeren script code ###"
-Write-Output "-------------------------------------------------------------------------------------"
+Write-Output "#####################################################################################"
+Write-Output "### Start uitvoeren script code                                                   ###"
+Write-Output "#####################################################################################"
 
 #Create list installed FOD
-[system.Environment]::OSVersion.Version | Out-File -FilePath $path\$InstalledFODList
-Get-WindowsCapability -online | where state -eq installed | Select-Object -ExpandProperty Name | Out-File -FilePath $path\$InstalledFODList -Append
+[system.Environment]::OSVersion.Version | Out-File -FilePath $logpath\$InstalledFODList -Append
+Get-WindowsCapability -online | where state -eq installed | Select-Object -ExpandProperty Name | Out-File -FilePath $logpath\$InstalledFODList -Append
 
 #Create WhiteList Array
 $WhiteListedFOD = New-Object -TypeName System.Collections.ArrayList
@@ -116,7 +116,7 @@ $WhiteListedFOD = New-Object -TypeName System.Collections.ArrayList
 	"Microsoft.Windows.Ethernet.Client", #Microsoft.Windows.Ethernet.Client.<hardware>.<Type>
 	"Microsoft.Windows.Wifi.Client", #Microsoft.Windows.Wifi.Client.<hardware>.<Type>
 	"Windows.Kernel",
-	"Windows.Client.ShellComponents~",
+	"Windows.Client.ShellComponents~"  # last whitelisted item no comma
 	))
   
 <##### Features On Demand - Windows 10 - 21H2 #####>   
@@ -127,45 +127,47 @@ $WhiteListedFOD = New-Object -TypeName System.Collections.ArrayList
 	"Media.WindowsMediaPlayer~", 
 	"Microsoft.Windows.MSPaint~",
 	"Microsoft.Windows.Notepad~",
-	"Microsoft.Windows.WordPad~"
+	"Microsoft.Windows.WordPad~"  # last whitelisted item no comma
 	### "OneCoreUAP.OneSync~",
-
 	### "Print.Fax.Scan~",
 	### "Print.Management.Console~"
 	))
 
 <##### Features On Demand - Windows 11 - 22H2 #####>   
 	$WhiteListedFOD.AddRange(@(
-	"Microsoft.Windows.Notepad.System~",
+	"Microsoft.Windows.Notepad.System~"  # last whitelisted item no comma
 	### "OpenSSH.Client~",
 	### "WMIC~" #WMI command line utility
 	))
 
 	Write-Output "-------------------------------------------------------------------------------"
-    	Write-Output "Starting Features on Demand removal process"	
+    Write-Output "Starting Features on Demand removal process"	
 	Write-Output "-------------------------------------------------------------------------------"
 	
 	# Determine packagenames from $WhiteListedFOD
 	$WhiteListedFOD = foreach ($FOD in $WhiteListedFOD) {Get-WindowsCapability -Online -Name $FOD* | where state -eq installed | Select-Object -ExpandProperty Name}
 	
+	# determine installed Packagenames
+	$InstalledFOD = Get-WindowsCapability -online -LimitAccess | where state -like installed | Select-Object -ExpandProperty Name
+			
 	# Loop through the list of FOD
-	foreach ($FOD in $FODArrayList) {
+	foreach ($FOD in $InstalledFOD) {
 		Write-Output "-------------------------------------------------------------------------------"
         Write-Output "Processing FOD package: $($FOD)"
 		
         # If FOD name not in FOD white list, remove FOD
         if (($FOD -in $WhiteListedFOD)) {
-            Write-Output ">>> Skipping excluded application package: $($FOD)"
+            Write-Output "--- Skipping excluded application package: $($FOD)"
         }
 		else {
 		
 		    try {
-                Write-Output "Removing Feature on Demand package: $($FOD)"
+                Write-Output ">>> Removing Feature on Demand package: $($FOD)"
 				Get-WindowsCapability -Online -LimitAccess -ErrorAction Stop | Where-Object { $_.Name -like $FOD } | Remove-WindowsCapability -Online -ErrorAction Stop | Out-Null
                 }
 				
-            catch [System.Exception] {
-                Write-Output "Removing Feature on Demand package failed: $($_.Exception.Message)"
+			catch [System.Exception] {
+                Write-Output "!!! Removing Feature on Demand package failed: $($_.Exception.Message)"
 				}
 			}
 	}
@@ -174,9 +176,9 @@ $WhiteListedFOD = New-Object -TypeName System.Collections.ArrayList
     Write-Output "Completed Feature on Demand removal process"
 	Write-Output "-------------------------------------------------------------------------------"
 
-Write-Output "-------------------------------------------------------------------------------------"
-Write-Output "### Einde uitvoeren script code ###"
-Write-Output "-------------------------------------------------------------------------------------"
+Write-Output "#####################################################################################"
+Write-Output "### Einde uitvoeren script code                                                   ###"
+Write-Output "#####################################################################################"
 #################### Einde uitvoeren script code ####################
 
 #################### End base script #######################
