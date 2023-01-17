@@ -122,12 +122,12 @@ $WhiteListedFOD = New-Object -TypeName System.Collections.ArrayList
 <##### Features On Demand - Windows 10 - 21H2 #####>   
 	$WhiteListedFOD.AddRange(@(
 	"App.Support.QuickAssist~",	
-	"DirectX.Configuration.Database~",
+	"DirectX.Configuration.Database~"  # last whitelisted item no comma
 	### "MathRecognizer~",
-	"Media.WindowsMediaPlayer~", 
-	"Microsoft.Windows.MSPaint~",
-	"Microsoft.Windows.Notepad~",
-	"Microsoft.Windows.WordPad~"  # last whitelisted item no comma
+	### "Media.WindowsMediaPlayer~", 
+	### "Microsoft.Windows.MSPaint~",
+	### "Microsoft.Windows.Notepad~",
+	### "Microsoft.Windows.WordPad~",
 	### "OneCoreUAP.OneSync~",
 	### "Print.Fax.Scan~",
 	### "Print.Management.Console~"
@@ -135,9 +135,8 @@ $WhiteListedFOD = New-Object -TypeName System.Collections.ArrayList
 
 <##### Features On Demand - Windows 11 - 22H2 #####>   
 	$WhiteListedFOD.AddRange(@(
-	"Microsoft.Windows.Notepad.System~"  # last whitelisted item no comma
-	### "OpenSSH.Client~",
-	### "WMIC~" #WMI command line utility
+	### "Microsoft.Windows.Notepad.System~"
+    "Microsoft.Windows.Wordpad~" # last whitelisted item no comma
 	))
 
 	Write-Output "-------------------------------------------------------------------------------"
